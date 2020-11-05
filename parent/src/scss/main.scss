@@ -1,0 +1,17 @@
+// @import "reset";
+// @import "breakpoint-sass";
+// @import "breakpoint-slicer";
+// $slicer-breakpoints: 0 400px 800px 1200px 1440px;
+
+$bg: #fff;
+$txt: #000;
+$accent: #007cf9;
+$cta: #007cf9;
+
+.peta-iframe {
+  min-height: 200px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
