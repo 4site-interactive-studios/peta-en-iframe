@@ -7,14 +7,16 @@ export const run = () => {
         return iframe.contentWindow === event.source;
       })[0];
   };
-  document.querySelectorAll("#content-area section").forEach((el) => {
-    console.log(el);
-    let petaIframe = new Shortcode(el, {
-      iframe: function() {
-        return `<iframe loading='lazy' id='peta-iframe' width='100%' scrolling='no' class='peta-iframe' src='${this.options.url}' frameborder='0' allowfullscreen></iframe>`;
-      },
+  document
+    .querySelectorAll("#content-area section, .splash-content")
+    .forEach((el) => {
+      console.log(el);
+      let petaIframe = new Shortcode(el, {
+        iframe: function() {
+          return `<iframe loading='lazy' id='peta-iframe' width='100%' scrolling='no' class='peta-iframe' src='${this.options.url}' frameborder='0' allowfullscreen></iframe>`;
+        },
+      });
     });
-  });
 
   // Scrolling Code
   window.onmessage = (e) => {
