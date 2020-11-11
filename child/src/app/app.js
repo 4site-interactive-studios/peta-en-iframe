@@ -21,16 +21,24 @@ export const run = () => {
   };
   if (inIframe()) {
     const shouldScroll = () => {
-      // If you find a error, scroll
+      // If you find a page error, scroll to it
       if (document.querySelector(".en__errorHeader")) {
-        return true;
+        return document
+          .querySelector(".en__errorHeader")
+          .getBoundingClientRect().top;
+      }
+      // If you find a field error, scroll to it
+      if (document.querySelector(".en__field__error")) {
+        return document
+          .querySelector(".en__field__error")
+          .getBoundingClientRect().top;
       }
       // Try to match the iframe referrer URL by testing valid EN Page URLs
       let referrer = document.referrer;
       let enURLPattern = new RegExp(/^(.*)\/(page)\/(\d+.*)/);
 
       // Scroll if the Regex matches, don't scroll otherwise
-      return enURLPattern.test(referrer);
+      return enURLPattern.test(referrer) ? 1 : 0;
     };
     window.onload = () => {
       sendIframeHeight();
@@ -45,22 +53,17 @@ export const run = () => {
         var targetElement = e.target || e.srcElement;
         var parentElement = targetElement.parentNode;
         if (parentElement.classList.contains("en__submit")) {
-          window.parent.postMessage(
-            {
-              scroll: true,
-            },
-            "*"
-          );
-        }
-        setTimeout(() => {
+          setTimeout(() => {
+            window.parent.postMessage(
+              {
+                scroll: shouldScroll(),
+              },
+              "*"
+            );
+          }, 200);
+        } else {
           sendIframeHeight();
-          window.parent.postMessage(
-            {
-              scroll: shouldScroll(),
-            },
-            "*"
-          );
-        }, 400);
+        }
       });
     };
     window.onresize = () => sendIframeHeight();

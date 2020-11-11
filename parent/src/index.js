@@ -1,6 +1,6 @@
 import { run } from "./app/app";
 import "./scss/main.scss";
+window.addEventListener("load", () => run());
+// window.setTimeout(() => {
 
-window.setTimeout(() => {
-  run();
-}, 1000);
+// }, 1000);

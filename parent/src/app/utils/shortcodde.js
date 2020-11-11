@@ -208,16 +208,3 @@ String.prototype.trim =
   function() {
     return this.replace(/^\s+|\s+$/g, "");
   };
-
-// jQuery plugin wrapper
-if (window.jQuery) {
-  var pluginName = "shortcode";
-  $.fn[pluginName] = function(tags) {
-    this.each(function() {
-      if (!$.data(this, pluginName)) {
-        $.data(this, pluginName, new Shortcode(this, tags));
-      }
-    });
-    return this;
-  };
-}

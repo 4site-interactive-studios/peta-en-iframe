@@ -1,11 +1,6 @@
 [data-en-embedded] {
   overflow: auto !important;
   max-width: 675px;
-  // Disable Popups
-  .mfp-bg,
-  .mfp-wrap {
-    display: none !important;
-  }
   // Hide Top Links, BG Image Button, Footer
   .top-links,
   .js-bg-toggle,
