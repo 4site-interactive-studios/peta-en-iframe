@@ -69,6 +69,7 @@ export const run = () => {
     window.onresize = () => sendIframeHeight();
     // Add data-en-embedded class to the body
     document.documentElement.setAttribute("data-en-embedded", true);
+    document.documentElement.setAttribute("data-en-suppress-lightboxes", true);
   }
   // Iframe Code End
 };
