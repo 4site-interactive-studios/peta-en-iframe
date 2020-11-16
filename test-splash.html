@@ -1,0 +1,1090 @@
+
+<!doctype html>
+<html class="no-js" lang="en-US">
+<head>
+<script type='text/javascript'>
+if (window.BEJSSDKObserver === undefined) {
+  (function(BEJSSDKObserver, $, undefined) {
+    var observer = void 0;
+    var listeners = [];
+    var readySet = [];
+    var doc = window.document;
+    var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+
+    function checkSelector(selector, fn, indexList) {
+      var elements = doc.querySelectorAll(selector);
+  /**
+    issues on IE @see https://www.codesd.com/item/javascript-es6-not-a-function-error.html
+    elements = Array.from(elements);
+
+    */
+    for (var i = 0, len = elements.length; i < len; i++) {
+      /* -1 means all instances */
+      if (indexList != -1 && !(i in indexList)) {
+        continue;
+      }
+      var element = elements[i];
+      for (var j = 0; j < readySet.length; j++) {
+        if (readySet[j] == element.className || readySet[j] == element.id) {
+          return;
+        }
+      }
+      if (element.className) {
+        readySet.push(element.className);
+      }
+      if (element.id) {
+        readySet.push(element.id);
+      }
+
+      if (!element.ready || MutationObserver==null) {
+        element.ready = true;
+        fn.call(element, element);
+      }
+    }
+  }
+
+  function checkListeners() {
+    listeners.forEach(function (listener) {
+      return checkSelector(listener.selector, listener.fn, listener.indexList);
+    });
+  }
+
+  function removeListener(selector, fn) {
+    var i = listeners.length;
+    while (i--) {
+      var listener = listeners[i];
+      if (listener.selector === selector && listener.fn === fn) {
+        listeners.splice(i, 1);
+        if (!listeners.length && observer) {
+          observer.disconnect();
+          observer = null;
+        }
+      }
+    }
+  }
+
+/**
+ * Fire event on first js selector
+ * @param selector string to watch on
+ * @param fn       callback function
+ * @param index_list can be undefined which means only first one
+ *                   or -1 which means all
+ *                   or a list of allowable indexes
+ */
+ BEJSSDKObserver.jsElementReady = function(selector, fn, index_list) {
+  if (index_list === undefined) {
+    index_list = [];
+    index_list.push(0);
+  }
+
+  if (MutationObserver != null) {
+    if (!observer) {
+      observer = new MutationObserver(checkListeners);
+      observer.observe(doc.documentElement, {
+        childList: true,
+        subtree: true
+      });
+    }
+    listeners.push({ selector: selector, fn: fn, indexList: index_list });
+  } else {
+    /* <= IE8 */
+    if (!document.addEventListener) {
+      /* log("<=IE8 attachEvent assignment"); */
+      document.addEventListener = document.attachEvent;
+    }
+    document.addEventListener("DOMContentLoaded", function(event) {
+      var elements = doc.querySelectorAll(selector);
+      for (var i = 0, len = elements.length; i < len; i++) {
+        /* -1 means all instances */
+        if (index_list != -1 && !(i in index_list)) {
+          continue;
+        }
+        var element = elements[i];
+        element.ready = true;
+        fn.call(element, element);
+      }
+    });
+  }
+
+  checkSelector(selector, fn, index_list);
+  return function () {
+    return removeListener(selector, fn);
+  };
+};
+}(window.BEJSSDKObserver = window.BEJSSDKObserver || {}));
+}
+var jsElementReady = window.BEJSSDKObserver.jsElementReady;
+
+if (window.BELinkBlockGenerator === undefined) {
+  (function(BELinkBlockGenerator, $, undefined) {
+    BELinkBlockGenerator.MAXIMUM_HEADLINE_LENGTH = 100;
+    BELinkBlockGenerator.MAXIMUM_DESC_LENGTH = 200;
+
+    BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_URL_TYPE = 0;
+    BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_HEADLINE_TYPE = 1;
+    BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_DESCRIPTION_TYPE = 2;
+    BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_IMAGE_TYPE = 3;
+
+    BELinkBlockGenerator.REPLACEMENT_STRATEGY_OVERWRITE = 0;
+    BELinkBlockGenerator.REPLACEMENT_STRATEGY_POST_APPEND_ELEMENT = 1;
+    BELinkBlockGenerator.REPLACEMENT_STRATEGY_PRE_APPEND_ELEMENT = 2;
+    BELinkBlockGenerator.REPLACEMENT_STRATEGY_PRE_APPEND_PARENT = 3;
+
+    BELinkBlockGenerator.setMaximumHeadlineLength = function(length) {
+      BELinkBlockGenerator.MAXIMUM_HEADLINE_LENGTH = length;
+    };
+
+    BELinkBlockGenerator.setMaximumDescriptionLength = function(length) {
+      BELinkBlockGenerator.MAXIMUM_DESC_LENGTH = length;
+    };
+
+    BELinkBlockGenerator.generateIndividualLinks = function(parentElement, linkStructure, link) {
+      var link_level_element_tag = linkStructure[0];
+      var link_level_element = document.createElement(link_level_element_tag);
+      var link_attribute_dictionary = linkStructure[1];
+      var allowable_elements = linkStructure[2];
+      var children_link_structures = linkStructure[3];
+      for (var link_attribute_key in link_attribute_dictionary) {
+        link_level_element.setAttribute(link_attribute_key, link_attribute_dictionary[link_attribute_key]);
+      }
+
+      var added_something = false;
+      if (allowable_elements.indexOf(BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_URL_TYPE)>=0) {
+        link_level_element.setAttribute('href', link.url);
+        added_something = true;
+      }
+      if (allowable_elements.indexOf(BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_HEADLINE_TYPE)>=0 && link.h1) {
+        var headline_text = link.h1;
+        if (headline_text.length > BELinkBlockGenerator.MAXIMUM_HEADLINE_LENGTH) {
+          headline_text = headline_text.substring(0, BELinkBlockGenerator.MAXIMUM_HEADLINE_LENGTH) + '...';
+        }
+        var text_node = document.createTextNode(headline_text);
+        link_level_element.appendChild(text_node);
+        added_something = true;
+      }
+      if (allowable_elements.indexOf(BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_DESCRIPTION_TYPE)>=0 && link.desc) {
+        var desc_text = link.desc;
+        if (desc_text.length > BELinkBlockGenerator.MAXIMUM_DESC_LENGTH) {
+          desc_text = desc_text.substring(0, BELinkBlockGenerator.MAXIMUM_DESC_LENGTH) + '...';
+        }
+        var text_node = document.createTextNode(desc_text);
+        link_level_element.appendChild(text_node);
+        added_something = true;
+      }
+      if (allowable_elements.indexOf(BELinkBlockGenerator.IND_LINK_BLOCK_TYPE_IMAGE_TYPE)>=0 && link.image) {
+        link_level_element.setAttribute('src', link.image);
+        added_something = true;
+      }
+/**
+    don't emit for empty links, desc, headline, image
+    except for parent structures where allowable_length=0
+    */
+    if (!added_something && allowable_elements.length != 0) {
+
+      return;
+    }
+    /* go depth first */
+    for (var childrenIndex=0; childrenIndex<children_link_structures.length; childrenIndex++) {
+      var childLinkStructure = children_link_structures[childrenIndex];
+      BELinkBlockGenerator.generateIndividualLinks(link_level_element, childLinkStructure, link);
+    }
+    parentElement.appendChild(link_level_element);
+  };
+
+  BELinkBlockGenerator.insertLinkBlocks = function(targetElement, replacementStrategy, overallStructure, linkStructure, links,
+                                                   titleStructure) {
+    if (targetElement == null) {
+      return;
+    }
+
+    if (replacementStrategy == BELinkBlockGenerator.REPLACEMENT_STRATEGY_OVERWRITE) {
+      while (targetElement.firstChild) {
+        targetElement.removeChild(targetElement.firstChild);
+      }
+    }
+
+    var previousElement = targetElement;
+    for (var i=0;i<overallStructure.length;i++) {
+      var level_definition = overallStructure[i];
+      var level_element_tag = level_definition[0];
+      var level_element = document.createElement(level_element_tag);
+      var attribute_dictionary = level_definition[1];
+      for (var attribute_key in attribute_dictionary) {
+        level_element.setAttribute(attribute_key, attribute_dictionary[attribute_key]);
+      }
+
+      /* need to place title structure */
+      if (titleStructure && titleStructure[0] == i) {
+        var title_element_tag = titleStructure[1];
+        var title_element = document.createElement(title_element_tag);
+        var title_attribute_dictionary = titleStructure[2];
+        var title_text_content = titleStructure[3];
+        for (var title_attribute_key in title_attribute_dictionary) {
+          title_element.setAttribute(title_attribute_key, title_attribute_dictionary[title_attribute_key]);
+        }
+
+        var title_text_node = document.createTextNode(title_text_content);
+        title_element.appendChild(title_text_node);
+
+
+        level_element.appendChild(title_element);
+      }
+
+      /* last level place links */
+      if (i == overallStructure.length-1) {
+        for (var link_i=0; link_i < links.length; link_i++) {
+          var link = links[link_i];
+          for (var linkStructureIndex=0;linkStructureIndex < linkStructure.length; linkStructureIndex++) {
+            BELinkBlockGenerator.generateIndividualLinks(level_element, linkStructure[linkStructureIndex], link)
+          }
+        }
+      }
+
+      /* first level child we need to check placement */
+      if (previousElement == targetElement) {
+        if (replacementStrategy == BELinkBlockGenerator.REPLACEMENT_STRATEGY_PRE_APPEND_ELEMENT) {
+          /* 2 means insert right before */
+          previousElement.insertBefore(level_element, targetElement.firstChild);
+        } else if (replacementStrategy == BELinkBlockGenerator.REPLACEMENT_STRATEGY_PRE_APPEND_PARENT) {
+          /* 3 means insert right before at parent level */
+          var parentElement = previousElement.parentElement;
+          parentElement.insertBefore(level_element, previousElement);
+        } else {
+          previousElement.appendChild(level_element);
+        }
+      } else {
+        previousElement.appendChild(level_element);
+      }
+      previousElement = level_element;
+    }
+  };
+}(window.BELinkBlockGenerator = window.BELinkBlockGenerator || {}))
+};
+</script>
+<style>
+.be-ix-link-block .be-related-link-container{padding-left:.625rem;padding-right:.625rem;margin-bottom:20px}
+.be-ix-link-block .be-related-link-container .be-label{margin:0;font-weight:700;width:100%;font-size:.8rem;line-height:1.6}
+.be-ix-link-block .be-related-link-container .be-list{list-style:none;margin:0;padding:0;display:block;width:100%}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item{display:block;margin-right:0}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item:last-child{margin-right:0}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item a{color:#fefefe;font-size:.8rem}
+@media (min-width: 40em) {
+.be-ix-link-block .be-related-link-container{padding-left:1rem;padding-right:1rem;display:flex}
+.be-ix-link-block .be-related-link-container .be-label{display:inline-block;margin-right:20px;flex-basis:135px;flex-grow:0;flex-shrink:0;font-size:.9rem}
+.be-ix-link-block .be-related-link-container .be-list{width:auto;font-size:.9rem;line-height:1.6;display:inline-block}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item{display:inline-block;margin-right:20px}
+.be-ix-link-block .be-related-link-container .be-list .be-list-item a{font-size:.9rem}
+}
+</style>
+<script>
+      (function() {
+      var bec = document.createElement('script');
+      bec.type = 'text/javascript';
+      bec.async = true;
+      bec.setAttribute("data-id", "bec");
+      bec.setAttribute("org-id", "f00000000154978");
+      bec.setAttribute("domain", ".peta.org");
+      bec.setAttribute("session-timeout", 86400000);
+      bec.src = document.location.protocol + '//cdn.b0e8.com/conv_v3.js';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(bec, s);
+})();
+</script>
+<script data-cfasync="false" data-testmode="true" id="marvel" data-customerid="f00000000154978" src="https://marvel-b2-cdn.bc0a.com/marvel.js"></script>
+<meta charset="utf-8">
+<meta name="apple-itunes-app" content="app-id=421236952">
+<meta property="article:published_time" content="2020-09-08" />
+
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>.async-hide { opacity: 0 !important} </style>
+<script>(function(a,s,y,n,c,h,i,d,e){s.className+=' '+y;h.start=1*new Date;
+		h.end=i=function(){s.className=s.className.replace(RegExp(' ?'+y),'')};
+		(a[n]=a[n]||[]).hide=h;setTimeout(function(){i();h.end=null},c);h.timeout=c;
+		})(window,document.documentElement,'async-hide','dataLayer',4000,
+		{'GTM-M4SSB7W':true});</script>
+
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-180x180.png">
+
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-152x152.png">
+
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-144x144.png">
+
+<link rel="apple-touch-icon-precomposed" sizes="120x120" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-120x120.png">
+
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-114x114.png">
+
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-72x72.png">
+
+<link rel="apple-touch-icon-precomposed" href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/apple-touch-icon-57x57.png">
+<meta class="foundation-mq">
+<link rel="pingback" href="https://dev.peta.org/xmlrpc.php">
+
+<meta property="fb:pages" content="5647744585" />
+
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+		new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+		j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+		'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+		})(window,document,'script','dataLayer','GTM-K76L3F');</script>
+
+<meta property="cf-cache-tags" content="ccm-965433" />
+
+<title>Test EN Splash | PETA</title>
+<meta name="description" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aliquam neque eget purus elementum, sit amet pharetra lectus pulvinar. Donec a justo vel" />
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+<link rel="canonical" href="https://dev.peta.org/blog/test-en-splash/" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Test EN Splash | PETA" />
+<meta property="og:description" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aliquam neque eget purus elementum, sit amet pharetra lectus pulvinar. Donec a justo vel" />
+<meta property="og:url" content="http://dev.peta.org/blog/test-en-splash/" />
+<meta property="og:site_name" content="PETA" />
+<meta property="article:publisher" content="https://www.facebook.com/officialpeta" />
+<meta property="article:published_time" content="2020-09-08T16:33:58+00:00" />
+<meta property="article:modified_time" content="2020-09-08T16:36:14+00:00" />
+<meta property="og:image" content="https://dev.peta.org/wp-content/uploads/2015/04/peta-facebook-placeholder-new.jpg" />
+<meta property="og:image:width" content="1600" />
+<meta property="og:image:height" content="1006" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:creator" content="@peta" />
+<meta name="twitter:site" content="@peta" />
+<meta name="twitter:label1" content="Written by">
+<meta name="twitter:data1" content="Sam Sasso">
+<meta name="twitter:label2" content="Est. reading time">
+<meta name="twitter:data2" content="1 minute">
+<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://dev.peta.org/#website","url":"https://dev.peta.org/","name":"PETA","description":"People for the Ethical Treatment of Animals","potentialAction":[{"@type":"SearchAction","target":"https://dev.peta.org/?s={search_term_string}","query-input":"required name=search_term_string"}],"inLanguage":"en-US"},{"@type":"WebPage","@id":"http://dev.peta.org/blog/test-en-splash/#webpage","url":"http://dev.peta.org/blog/test-en-splash/","name":"Test EN Splash | PETA","isPartOf":{"@id":"https://dev.peta.org/#website"},"datePublished":"2020-09-08T16:33:58+00:00","dateModified":"2020-09-08T16:36:14+00:00","author":{"@id":"https://dev.peta.org/#/schema/person/dfacaf9c57a8d758d9dc3f12ec93998f"},"description":"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aliquam neque eget purus elementum, sit amet pharetra lectus pulvinar. Donec a justo vel","inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["http://dev.peta.org/blog/test-en-splash/"]}]},{"@type":"Person","@id":"https://dev.peta.org/#/schema/person/dfacaf9c57a8d758d9dc3f12ec93998f","name":"Sam Sasso","image":{"@type":"ImageObject","@id":"https://dev.peta.org/#personlogo","inLanguage":"en-US","url":"https://dev.peta.org/wp-includes/images/blank.gif","caption":"Sam Sasso"}}]}</script>
+
+<link rel='dns-prefetch' href='//cdn.optimizely.com' />
+<link rel='dns-prefetch' href='//resources.peta.org' />
+<link rel='dns-prefetch' href='//use.typekit.net' />
+<link rel='dns-prefetch' href='//cdn.jsdelivr.net' />
+<link rel='dns-prefetch' href='//s.w.org' />
+<link rel="alternate" type="application/rss+xml" title="PETA &raquo; Feed" href="https://dev.peta.org/feed/" />
+<link rel="alternate" type="application/rss+xml" title="PETA &raquo; Comments Feed" href="https://dev.peta.org/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="PETA &raquo; Test EN Splash Comments Feed" href="https://dev.peta.org/blog/test-en-splash/feed/" />
+<script type="text/javascript">
+			window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.0.0\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/13.0.0\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/dev.peta.org\/wp-includes\/js\/wp-emoji-release.min.js?ver=5.5.3"}};
+			!function(e,a,t){var r,n,o,i,p=a.createElement("canvas"),s=p.getContext&&p.getContext("2d");function c(e,t){var a=String.fromCharCode;s.clearRect(0,0,p.width,p.height),s.fillText(a.apply(this,e),0,0);var r=p.toDataURL();return s.clearRect(0,0,p.width,p.height),s.fillText(a.apply(this,t),0,0),r===p.toDataURL()}function l(e){if(!s||!s.fillText)return!1;switch(s.textBaseline="top",s.font="600 32px Arial",e){case"flag":return!c([127987,65039,8205,9895,65039],[127987,65039,8203,9895,65039])&&(!c([55356,56826,55356,56819],[55356,56826,8203,55356,56819])&&!c([55356,57332,56128,56423,56128,56418,56128,56421,56128,56430,56128,56423,56128,56447],[55356,57332,8203,56128,56423,8203,56128,56418,8203,56128,56421,8203,56128,56430,8203,56128,56423,8203,56128,56447]));case"emoji":return!c([55357,56424,8205,55356,57212],[55357,56424,8203,55356,57212])}return!1}function d(e){var t=a.createElement("script");t.src=e,t.defer=t.type="text/javascript",a.getElementsByTagName("head")[0].appendChild(t)}for(i=Array("flag","emoji"),t.supports={everything:!0,everythingExceptFlag:!0},o=0;o<i.length;o++)t.supports[i[o]]=l(i[o]),t.supports.everything=t.supports.everything&&t.supports[i[o]],"flag"!==i[o]&&(t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&t.supports[i[o]]);t.supports.everythingExceptFlag=t.supports.everythingExceptFlag&&!t.supports.flag,t.DOMReady=!1,t.readyCallback=function(){t.DOMReady=!0},t.supports.everything||(n=function(){t.readyCallback()},a.addEventListener?(a.addEventListener("DOMContentLoaded",n,!1),e.addEventListener("load",n,!1)):(e.attachEvent("onload",n),a.attachEvent("onreadystatechange",function(){"complete"===a.readyState&&t.readyCallback()})),(r=t.source||{}).concatemoji?d(r.concatemoji):r.wpemoji&&r.twemoji&&(d(r.twemoji),d(r.wpemoji)))}(window,document,window._wpemojiSettings);
+		</script>
+<style type="text/css">
+img.wp-smiley,
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	box-shadow: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+}
+</style>
+<link rel='stylesheet' id='wp-block-library-css' href='https://dev.peta.org/wp-includes/css/dist/block-library/style.min.css?ver=5.5.3' type='text/css' media='all' />
+<link rel='stylesheet' id='foobox-min-css' href='https://dev.peta.org/wp-content/plugins/fooboxV2/css/foobox.min.css?ver=2.4.0.0' type='text/css' media='all' />
+<link rel='stylesheet' id='pon-css-css' href='https://dev.peta.org/wp-content/plugins/peta-optimization/css/po.css?v=2.0&#038;ver=5.5.3' type='text/css' media='all' />
+<link rel='stylesheet' id='peta-splash-pages-css' href='https://dev.peta.org/wp-content/plugins/plugin-splash-pages/includes/frontend/css/peta-splash-pages.css?ver=5.5.3' type='text/css' media='all' />
+<link rel='stylesheet' id='sticky-banner-css-css' href='https://dev.peta.org/wp-content/plugins/peta-org-sticky-banner/styles/sticky-banner.css?ver=5.5.3' type='text/css' media='all' />
+<link rel='stylesheet' id='site-css-css' href='https://dev.peta.org/wp-content/themes/petaorg/assets/styles/style.css?ver=1605292151' type='text/css' media='all' />
+<script type='text/javascript' src='https://cdn.optimizely.com/js/2806791494.js?ver=5.5.3' id='optimizely-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-includes/js/jquery/jquery.js?ver=1.12.4-wp' id='jquery-core-js'></script>
+<script type='text/javascript' id='peta-utility-functions-js-extra'>
+/* <![CDATA[ */
+var PETA_Variables = {"debug":""};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-utility-functions/assets/js/peta-utility-functions.js?ver=1.0' id='peta-utility-functions-js'></script>
+<script type='text/javascript' src='https://resources.peta.org/googleAnalytics/global/ga_constants.js?ver=5.5.3' id='ga-constants-js'></script>
+<script type='text/javascript' src='https://resources.peta.org/googleAnalytics/petaUS/peta/gaBase.js?ver=5.5.3' id='ga-base-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-includes/js/dist/vendor/moment.min.js?ver=2.26.0' id='moment-js'></script>
+<script type='text/javascript' id='moment-js-after'>
+moment.updateLocale( 'en_US', {"months":["January","February","March","April","May","June","July","August","September","October","November","December"],"monthsShort":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"weekdaysShort":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"week":{"dow":0},"longDateFormat":{"LT":"g:i A","LTS":null,"L":null,"LL":"F j, Y","LLL":"F j, Y g:i a","LLLL":null}} );
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-countdown-timer/js/moment-timezone-with-data-2012-2022.js?ver=5.5.3' id='moment-timezone-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-countdown-timer/js/jquery.countdown.js?ver=5.5.3' id='jquery-countdown-js'></script>
+<script type='text/javascript' id='countdown-setup-js-extra'>
+/* <![CDATA[ */
+var countdown_vars = {"locale":null,"timezone":"America\/Los_Angeles","labels":["Years","Months","Weeks","Days","Hours","Minutes","Seconds"],"labels_1":["Year","Month","Week","Day","Hour","Minute","Second"]};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-countdown-timer/js/countdown-setup.js?ver=5.5.3' id='countdown-setup-js'></script>
+<script type='text/javascript' src='//use.typekit.net/akq4hkn.js?ver=5.5.3' id='typekit-font-js'></script>
+<script type='text/javascript' src='https://peta.test/peta-iframe/parent/dist/peta-iframe-parent.js?ver=5.5.3' id='en-iframe-js'></script>
+<link rel="https://api.w.org/" href="https://dev.peta.org/wp-json/" /><link rel="alternate" type="application/json" href="https://dev.peta.org/wp-json/wp/v2/posts/965433" /><link rel='shortlink' href="https://peta.vg/2x2i" />
+<link rel="alternate" type="application/json+oembed" href="https://dev.peta.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fdev.peta.org%2Fblog%2Ftest-en-splash%2F" />
+<link rel="alternate" type="text/xml+oembed" href="https://dev.peta.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fdev.peta.org%2Fblog%2Ftest-en-splash%2F&#038;format=xml" />
+<meta property="fb:pages" content="5647744585" />
+<meta property="ia:markup_url" content="https://dev.peta.org/blog/test-en-splash/?ia_markup=1" />
+<meta name="pubdate" content="20200908">
+
+<link href="https://peta.vg/2x2i" rel="shortlink">
+</head>
+<body class="post-template-default single single-post postid-965433 single-format-standard">
+<script type='text/javascript'>
+    function positionLinkBlock(targetContainer) {
+        if (targetContainer != null) {
+            var strLinkBlock = '<div class="be-related-link-container"><div class="be-label">Also of Interest</div><ul class="be-list"><li class="be-list-item"><a class="be-related-link" href="https://investigations.peta.org/petas-rescue-team/">PETA Rescues</a></li><li class="be-list-item"><a class="be-related-link" href="https://investigations.peta.org/breed-specific-protection/">What&#39;s the Kindest Thing We Can Do for Pit Bulls?</a></li><li class="be-list-item"><a class="be-related-link" href="https://www.peta.org/living/personal-care-fashion/shop-vegan-clothing-compassionate-shopping-guide/">PETA’s Vegan Clothing Shopping Guide</a></li></ul></div>';
+            targetContainer.insertAdjacentHTML('afterbegin', strLinkBlock);
+        }
+    }
+
+    jsElementReady('.be-ix-link-block', positionLinkBlock)
+
+</script>
+<ul id="be_sdkms_capsule_open" style="display:none!important">
+<li class="be_sdkms_sdk_version">be_ixf; php_sdk; php_sdk_1.4.18</li>
+<li id="be_sdkms_capsule_connect_timer">44 ms</li>
+<li id="be_sdkms_capsule_index_time">iy_2020; im_11; id_16; ih_09; imh_03; i_epoch:1605546186916</li>
+<li id="be_sdkms_capsule_pub">ixf-compiler; ixf-compiler_1.0.0.0</li>
+<li id="be_sdkms_capsule_date_modified">py_2020; pm_10; pd_28; ph_11; pmh_03; p_epoch:1603908213586</li>
+</ul>
+<ul class="be_sdkms_node" style="display:none!important">
+<li class="be_sdkms_pub">link-block; link-block_link-block; bodystr</li>
+<li class="be_sdkms_date_modified">pn_tstr:Wed Oct 28 11:03:33 PST 2020; pn_epoch:1603908213586</li>
+<li class="be_sdkms_timer">0 ms</li>
+</ul>
+<ul id="be_sdkms_capsule" style="display:none!important">
+<li class="be_sdkms_sdk_version">be_ixf; php_sdk; php_sdk_1.4.18</li>
+<li id="be_sdkms_original_url">https://dev.peta.org/blog/test-en-splash/</li>
+<li id="be_sdkms_normalized_url">https://dev.peta.org/blog/test-en-splash/</li>
+</ul>
+<div id="fb-root"></div>
+<script>
+	window.fbAsyncInit = function() {
+		FB.init({
+		appId            : '124139360941459',
+		autoLogAppEvents : true,
+		xfbml            : true,
+		version          : 'v3.2'
+		});
+	};
+	</script>
+<script async defer src="https://connect.facebook.net/en_US/sdk.js"></script>
+<div class="off-canvas-wrapper">
+
+<div class="off-canvas position-left is-closed is-transition-push" id="offcanvas" data-off-canvas data-position="left">
+
+<button class="close-button medium" aria-label="Close menu" type="button" data-close>
+<span aria-hidden="true">&times;</span>
+</button>
+<span class="logo">
+<a href="https://dev.peta.org" title="" accesskey="1">
+<img itemprop="logo" src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/peta-text-logo-blue.svg" alt="PETA" width="120" height="78" />
+</a>
+</span>
+<a class="donate-button button yellow" href="/donate/">Donate Now</a>
+<form role="search" method="get" class="search-form" action="https://dev.peta.org/">
+<input type="text" placeholder="What do you want to find?" name="s" id="s">
+<input type="submit" id="searchsubmit" value="&#x67;" />
+</form>
+<div class="main-nav"><ul id="menu-top-navigation" class="menu"><li id="menu-item-745" class="nav-features menu-item menu-item-type-post_type_archive menu-item-object-feature menu-item-745"><a accesskey="3" title="Features" href="https://dev.peta.org/features/">Features</a></li>
+<li id="menu-item-916786" class="nav-video menu-item menu-item-type-post_type_archive menu-item-object-video menu-item-has-children menu-item-916786"><a accesskey="4" href="https://dev.peta.org/videos/">Videos</a></li>
+<li id="menu-item-145474" class="nav-action menu-item menu-item-type-post_type_archive menu-item-object-peta-action menu-item-has-children menu-item-145474"><a accesskey="5" title="Action" href="https://dev.peta.org/action/">Action</a></li>
+<li id="menu-item-148174" class="nav-blog menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-has-children menu-item-148174"><a accesskey="6" title="News" href="https://dev.peta.org/blog/">News</a></li>
+<li id="menu-item-748" class="nav-issues menu-item menu-item-type-post_type_archive menu-item-object-issue menu-item-has-children menu-item-748"><a accesskey="7" title="Issues" href="https://dev.peta.org/issues/">Issues</a></li>
+<li id="menu-item-145472" class="nav-living menu-item menu-item-type-post_type_archive menu-item-object-living menu-item-has-children menu-item-145472"><a accesskey="8" title="Living" href="https://dev.peta.org/living/">Living</a></li>
+<li id="menu-item-920111" class="menu-item menu-item-type-post_type_archive menu-item-object-student menu-item-has-children menu-item-920111"><a accesskey="t" href="https://dev.peta.org/students/">Students</a></li>
+<li id="menu-item-596" class="nav-shop menu-item menu-item-type-post_type menu-item-object-page menu-item-596"><a accesskey="b" title="Shop" href="https://dev.peta.org/shop/">Shop</a></li>
+<li id="menu-item-602710" class="nav-interactive menu-item menu-item-type-post_type menu-item-object-page menu-item-602710"><a accesskey="c" title="Investigations" href="https://dev.peta.org/investigations/">Investigations</a></li>
+<li id="menu-item-145464" class="nav-media menu-item menu-item-type-post_type_archive menu-item-object-media_center menu-item-has-children menu-item-145464"><a accesskey="d" title="Media" href="https://dev.peta.org/media/">Media</a></li>
+<li id="menu-item-145470" class="nav-about menu-item menu-item-type-post_type_archive menu-item-object-about menu-item-has-children menu-item-145470"><a accesskey="e" title="About" href="https://dev.peta.org/about-peta/">About</a></li>
+<li id="menu-item-149040" class="nav-donate menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-149040"><a accesskey="a" title="Donate Now" href="https://support.peta.org/page/1828/donate/1?en_txn7=Navigation::top%20donate%20now%20button&#038;supporter.appealCode=IXXXWBXXXXG">Donate Now</a></li>
+</ul></div><ul id="menu-top-bar-sites-2" class="menu"><li id="menu-item-825" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-825"><a title="Programs" href="https://dev.peta.org/misc/topics/">Programs</a>
+<ul class="sub-menu">
+<li id="menu-item-644003" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644003"><a accesskey="u" target="_blank" rel="noopener noreferrer" href="https://prime.peta.org">PETA Prime</a></li>
+<li id="menu-item-644008" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644008"><a accesskey="w" target="_blank" rel="noopener noreferrer" href="https://www.petakids.com">PETA Kids</a></li>
+<li id="menu-item-644010" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644010"><a href="http://teachkind.org">TeachKind</a></li>
+<li id="menu-item-955908" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-955908"><a href="https://sos.peta.org">Students Opposing Speciesism (SOS)</a></li>
+</ul>
+</li>
+<li id="menu-item-826" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-826"><a title="Support PETA" href="https://dev.peta.org/donate/ways-to-support-peta/">Support PETA</a>
+<ul class="sub-menu">
+<li id="menu-item-827" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-827"><a title="Become a Member" href="https://support.peta.org/page/2141/donate/1?en_txn7=Navigation::0718-PETAorg-Support-PETA-Dropdown-Join&#038;supporter.appealCode=IXXXWBXXXXM">Become a Member</a></li>
+<li id="menu-item-828" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-828"><a title="Make a Monthly Gift" href="https://support.peta.org/page/6064/donate/1?en_txn7=Navigation::0718-PETAorg-Support-PETA-Dropdown-Monthly&#038;supporter.appealCode=IXXXWBXXXXG">Make a Monthly Gift</a></li>
+<li id="menu-item-831709" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-831709"><a href="http://memorial.peta.org">Make a Memorial Gift</a></li>
+<li id="menu-item-962909" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-962909"><a href="https://presents.peta.org/?en_txn7=Navigation::Support-PETA-dropdown">Make an Honorary Gift</a></li>
+<li id="menu-item-960098" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-960098"><a href="https://legacy.peta.org/?en_txn7=other::Branding%20Bar">Your Legacy For Animals</a></li>
+<li id="menu-item-798669" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-798669"><a href="https://dev.peta.org/donate/vanguard/">What Is the Vanguard Society?</a></li>
+<li id="menu-item-798668" class="menu-item menu-item-type-post_type menu-item-object-donate menu-item-798668"><a href="https://dev.peta.org/donate/membership-services/">Membership Services</a></li>
+<li id="menu-item-831710" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-831710"><a target="_blank" rel="noopener noreferrer" href="https://shop.peta.org/peta-gift-membership.html">Gift Memberships</a></li>
+<li id="menu-item-644014" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644014"><a accesskey="y" title="More Ways to Support PETA" href="https://dev.peta.org/donate/ways-to-support-peta/">More Ways</a></li>
+</ul>
+</li>
+<li id="menu-item-143350" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-143350"><a accesskey="9" title="Report Cruelty to Animals" href="https://dev.peta.org/about-peta/contact-peta/report-cruelty/">Report Cruelty to Animals</a></li>
+</ul></div>
+<div class="off-canvas-content" data-off-canvas-content>
+<header class="header display-image" role="banner">
+<a class="screen-reader-shortcut" href="#content-area" tabindex="1">Skip to Main Content</a>
+
+
+<div id="top-bar-block" class="mobile-top-bar top-bar-container hide-for-large" data-sticky-container>
+<div class="mobile-nav menu-icon-wrap sticky" data-sticky data-top-anchor="top-bar-block" data-btm-anchor="footer:bottom" data-margin-top="0" data-sticky-on="small">
+<div class="align-left">
+<button class="menu-icon" data-open="offcanvas" type="button"></button>
+<span class="logo">
+<a href="https://dev.peta.org" title="" accesskey="1">
+<img itemprop="logo" src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/peta-text-logo-white.svg" alt="PETA" width="120" height="78" />
+</a>
+</span>
+</div>
+<div class="align-right default">
+<a class="donate-link" href="https://support.peta.org/page/1828/donate/1?en_txn7=Navigation::0718-PETAorg-Mobile-Top-Donate-Now-Button&supporter.appealCode=IXXXWBXXXXG">Donate Now</a><button class="search-icon" data-open="offcanvas" type="button"><svg class="icon" viewBox="0 0 20 20" width="20" height="20"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_search"></use></svg></button>
+</div>
+<div class="align-right mobile-scroll">
+<div class="social-share-top-bar"><div class="social-links">
+<a class="social facebook" data-social="facebook" data-share-location="Sticky Header Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-redirect="https://dev.peta.org/facebook-redirect.html"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_facebook"></use></svg><span>Share</span></a><a class="social twitter" data-social="twitter" data-share-location="Sticky Header Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-text="Test+EN+Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_twitter"></use></svg><span>Tweet</span></a><a class="donate" href="https://support.peta.org/page/1828/donate/1?en_txn7=Footer::0818-Donate-Now-Button-Social-Share-Bar&supporter.appealCode=IXXXWBXXXXG" title="Test EN Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_donate"></use></svg><span>Donate</span></a></div></div>
+<a class="next-article" href="https://dev.peta.org/blog/test-en-shortcode-and-splash/" rel="prev">Next Article &raquo;</a> </div>
+</div>
+</div>
+
+<div class="super-nav bar show-for-large">
+<nav class="row">
+<div class="nav columns large-9">
+<div class="logo-text">
+<a href="https://dev.peta.org" title="PETA | People for the Ethical Treatment of Animals">
+<span>People for the Ethical Treatment of Animals</span>
+</a>
+</div>
+<ul id="menu-top-bar-sites-3" class="vertical medium-horizontal large-horizontal menu align-right dropdown top-nav" data-dropdown-menu><li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-825"><a title="Programs" href="https://dev.peta.org/misc/topics/">Programs</a>
+<ul class="sub-menu">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644003"><a accesskey="u" target="_blank" rel="noopener noreferrer" href="https://prime.peta.org">PETA Prime</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644008"><a accesskey="w" target="_blank" rel="noopener noreferrer" href="https://www.petakids.com">PETA Kids</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644010"><a href="http://teachkind.org">TeachKind</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-955908"><a href="https://sos.peta.org">Students Opposing Speciesism (SOS)</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-826"><a title="Support PETA" href="https://dev.peta.org/donate/ways-to-support-peta/">Support PETA</a>
+<ul class="sub-menu">
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-827"><a title="Become a Member" href="https://support.peta.org/page/2141/donate/1?en_txn7=Navigation::0718-PETAorg-Support-PETA-Dropdown-Join&#038;supporter.appealCode=IXXXWBXXXXM">Become a Member</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-828"><a title="Make a Monthly Gift" href="https://support.peta.org/page/6064/donate/1?en_txn7=Navigation::0718-PETAorg-Support-PETA-Dropdown-Monthly&#038;supporter.appealCode=IXXXWBXXXXG">Make a Monthly Gift</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-831709"><a href="http://memorial.peta.org">Make a Memorial Gift</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-962909"><a href="https://presents.peta.org/?en_txn7=Navigation::Support-PETA-dropdown">Make an Honorary Gift</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-960098"><a href="https://legacy.peta.org/?en_txn7=other::Branding%20Bar">Your Legacy For Animals</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-798669"><a href="https://dev.peta.org/donate/vanguard/">What Is the Vanguard Society?</a></li>
+<li class="menu-item menu-item-type-post_type menu-item-object-donate menu-item-798668"><a href="https://dev.peta.org/donate/membership-services/">Membership Services</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-831710"><a target="_blank" rel="noopener noreferrer" href="https://shop.peta.org/peta-gift-membership.html">Gift Memberships</a></li>
+<li class="menu-item menu-item-type-custom menu-item-object-custom menu-item-644014"><a accesskey="y" title="More Ways to Support PETA" href="https://dev.peta.org/donate/ways-to-support-peta/">More Ways</a></li>
+</ul>
+</li>
+<li class="menu-item menu-item-type-post_type menu-item-object-about menu-item-143350"><a accesskey="9" title="Report Cruelty to Animals" href="https://dev.peta.org/about-peta/contact-peta/report-cruelty/">Report Cruelty to Animals</a></li>
+</ul> </div>
+<div class="search-peta columns large-3">
+<div class="inner">
+<form role="search" method="get" id="searchform" action="https://dev.peta.org/">
+<input type="text" placeholder="Search PETA.org" name="s" id="s">
+<input type="submit" id="searchsubmit" value="Search" />
+</form>
+</div>
+</div>
+</nav>
+</div>
+
+
+<div class="logo-header bar">
+<div class="wrapper row">
+<div class="logo-column hide-for-small-only">
+<div class="inner">
+<a href="https://dev.peta.org" title="PETA | People for the Ethical Treatment of Animals">
+<img src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/peta-logo.svg" width="120" height="120" />
+</a>
+</div>
+</div>
+<div class="mission column medium-12">
+<a href="https://dev.peta.org/features/what-peta-really-stands-for/">
+<div class="important">Animals are not ours</div><div>to experiment on, eat, wear, use for entertainment, or abuse in any other way. <span class="arrow"></span></div>
+</a>
+</div>
+<div class="header-rabbit show-for-medium">
+<img src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/bunny.svg" width="162" height="82" />
+</div>
+</div>
+</div>
+
+<div class="nav row show-for-large main-nav-bar">
+<div class="main-nav"><ul id="menu-top-navigation-1" class="menu"><li class="nav-features menu-item menu-item-type-post_type_archive menu-item-object-feature menu-item-745"><a accesskey="3" title="Features" href="https://dev.peta.org/features/">Features</a></li>
+<li class="nav-video menu-item menu-item-type-post_type_archive menu-item-object-video menu-item-has-children menu-item-916786"><a accesskey="4" href="https://dev.peta.org/videos/">Videos</a></li>
+<li class="nav-action menu-item menu-item-type-post_type_archive menu-item-object-peta-action menu-item-has-children menu-item-145474"><a accesskey="5" title="Action" href="https://dev.peta.org/action/">Action</a></li>
+<li class="nav-blog menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-has-children menu-item-148174"><a accesskey="6" title="News" href="https://dev.peta.org/blog/">News</a></li>
+<li class="nav-issues menu-item menu-item-type-post_type_archive menu-item-object-issue menu-item-has-children menu-item-748"><a accesskey="7" title="Issues" href="https://dev.peta.org/issues/">Issues</a></li>
+<li class="nav-living menu-item menu-item-type-post_type_archive menu-item-object-living menu-item-has-children menu-item-145472"><a accesskey="8" title="Living" href="https://dev.peta.org/living/">Living</a></li>
+<li class="menu-item menu-item-type-post_type_archive menu-item-object-student menu-item-has-children menu-item-920111"><a accesskey="t" href="https://dev.peta.org/students/">Students</a></li>
+<li class="nav-shop menu-item menu-item-type-post_type menu-item-object-page menu-item-596"><a accesskey="b" title="Shop" href="https://dev.peta.org/shop/">Shop</a></li>
+<li class="nav-interactive menu-item menu-item-type-post_type menu-item-object-page menu-item-602710"><a accesskey="c" title="Investigations" href="https://dev.peta.org/investigations/">Investigations</a></li>
+<li class="nav-media menu-item menu-item-type-post_type_archive menu-item-object-media_center menu-item-has-children menu-item-145464"><a accesskey="d" title="Media" href="https://dev.peta.org/media/">Media</a></li>
+<li class="nav-about menu-item menu-item-type-post_type_archive menu-item-object-about menu-item-has-children menu-item-145470"><a accesskey="e" title="About" href="https://dev.peta.org/about-peta/">About</a></li>
+<li class="nav-donate menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-149040"><a accesskey="a" title="Donate Now" href="https://support.peta.org/page/1828/donate/1?en_txn7=Navigation::top%20donate%20now%20button&#038;supporter.appealCode=IXXXWBXXXXG">Donate Now</a></li>
+</ul></div> 
+<div class="smore-links">
+</div>
+
+</div>
+
+</header> 
+<div class="content">
+<div class="sticky-nav-bar-container" data-sticky-container>
+<div class="sticky-nav-bar" data-margin-top="0" data-sticky data-top-anchor="content-area" data-sticky-on="large">
+<div class="row">
+<div class="medium-1 columns logo">
+<img src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/peta-text-logo.svg" alt="PETA" width="80" height="30" />
+</div>
+<div class="medium-4 columns">
+</div>
+<div class="medium-7 columns side-stuff">
+<div class="social-share-top-bar">
+<h4>Share</h4>
+<div class="social-links">
+<a class="social facebook" data-social="facebook" data-share-location="Sticky Header Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-redirect="https://dev.peta.org/facebook-redirect.html"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_facebook"></use></svg><span>Share</span></a><a class="social twitter" data-social="twitter" data-share-location="Sticky Header Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-text="Test+EN+Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_twitter"></use></svg><span>Tweet</span></a><a class="donate" href="https://support.peta.org/page/1828/donate/1?en_txn7=Footer::0818-Donate-Now-Button-Social-Share-Bar&supporter.appealCode=IXXXWBXXXXG" title="Test EN Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_donate"></use></svg><span>Donate</span></a></div> </div>
+<a class="next-article" href="https://dev.peta.org/blog/test-en-shortcode-and-splash/" rel="prev">Next Article &raquo;</a> </div>
+</div>
+</div>
+</div>
+<div class="row page-header">
+<div class="nav sub-nav-wrap archive-side-menu hide-for-xxlarge">
+<section>
+<span class="fade back hide-for-large"></span>
+<div class="second-nav"><div id="menu-top-navigation-2" class="menu"><ul><li id="menu-item-427737" class="menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-427737"><a href="https://dev.peta.org/blog/">All</a></li>
+<li id="menu-item-427738" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-427738"><a href="https://dev.peta.org/category/opinion/">Opinion</a></li>
+<li id="menu-item-733547" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-733547"><a href="https://dev.peta.org/category/miscellaneous-parent/rescued/">Rescued</a></li>
+<li id="menu-item-733546" class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-733546"><a href="https://dev.peta.org/category/miscellaneous-parent/adoptable/">Adoptable</a></li>
+</ul></div></div> <span class="fade forward hide-for-large"></span>
+</section>
+</div>
+<div id="archive-menu-big" class="archive-side-menu" data-sticky-container>
+<div class="sticky" data-sticky data-top-anchor="content-area:top" data-margin-top="3.5" data-btm-anchor="content-area:bottom" data-sticky-on="xxlarge only">
+<div class="menu vertical"><ul id="menu-top-navigation-3" class="menu"><li class="menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-427737"><a href="https://dev.peta.org/blog/">All</a></li>
+<li class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-427738"><a href="https://dev.peta.org/category/opinion/">Opinion</a></li>
+<li class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-733547"><a href="https://dev.peta.org/category/miscellaneous-parent/rescued/">Rescued</a></li>
+<li class="menu-item menu-item-type-taxonomy menu-item-object-category menu-item-733546"><a href="https://dev.peta.org/category/miscellaneous-parent/adoptable/">Adoptable</a></li>
+</ul></div> </div>
+</div>
+</div>
+<div id="content-area" class="wrapper">
+<div class="row">
+<div id="content-block" class="columns large-8 content-main">
+<main class="inner">
+<header class="article-header">
+<h1 class="entry-title single-title" itemprop="headline">Test EN Splash</h1>
+<div class="social-links">
+<a class="social facebook" data-social="facebook" data-share-location="Post Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-redirect="https://dev.peta.org/facebook-redirect.html"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_facebook"></use></svg><span>Share</span></a><a class="social twitter" data-social="twitter" data-share-location="Post Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-text="Test+EN+Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_twitter"></use></svg><span>Tweet</span></a><a class="donate" href="https://support.peta.org/page/1828/donate/1?en_txn7=Footer::0818-Donate-Now-Button-Social-Share-Bar&supporter.appealCode=IXXXWBXXXXG" title="Test EN Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_donate"></use></svg><span>Donate</span></a></div> <div class="sub-head">
+<span>Published <time datetime="2020-09-08T16:33:58+00:00">September 8, 2020</time> by <span class="author">Sam Sasso</span>. </span>
+</div>
+</header>
+<article id="post-965433" class="post-965433 post type-post status-publish format-standard hentry category-uncategorized placement-blog placement-home-page-featured-posts" role="article" itemscope itemtype="http://schema.org/BlogPosting">
+<section class="entry-content clearfix" itemprop="articleBody">
+<div class="the-content">
+<input class="fooboxshare_post_id" type="hidden" value="965433" /><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aliquam neque eget purus elementum, sit amet pharetra lectus pulvinar. Donec a justo vel erat ultricies iaculis nec eu nunc. Suspendisse potenti. Donec imperdiet euismod elit, in porttitor metus vehicula non. Proin tempor imperdiet luctus. Cras in malesuada sem. Morbi placerat odio in metus accumsan euismod. Praesent ornare massa nec lectus suscipit tincidunt. Proin a nisi quis ante euismod tristique non ut felis. Fusce facilisis ullamcorper sapien et consectetur. Nulla aliquet volutpat sapien, vitae pharetra nisl pretium a. Suspendisse dapibus pulvinar risus, in scelerisque sapien. Fusce molestie purus et tellus euismod ullamcorper. In ut dolor pharetra, cursus velit quis, condimentum nunc. Suspendisse potenti. Quisque sodales semper erat, tincidunt lobortis tortor pharetra in.</p>
+<p>Aenean nec pharetra felis. Mauris ac auctor enim, id tristique est. Phasellus libero metus, sagittis elementum velit sed, dignissim venenatis odio. Nulla aliquam ligula vitae sem malesuada, at pharetra magna iaculis. Sed ornare fermentum libero, nec semper sem efficitur sed. Sed nisi ligula, consectetur nec nisi eu, vulputate commodo ligula. Integer placerat blandit sem quis faucibus. Quisque sit amet cursus justo. Nulla quis dapibus lorem. Vivamus vel velit elit. Ut vitae arcu in risus venenatis gravida. Vestibulum volutpat luctus sagittis. Donec auctor dictum elit, id convallis mi. Duis molestie tellus enim, sed dictum diam laoreet ac. Donec diam turpis, volutpat sed nisi vitae, porttitor bibendum purus.</p>
+</div>
+</section> 
+</article> 
+</main> 
+</div> 
+<div id="sidebar-single" class="sidebar columns large-4">
+<div class="landing-sidebar content-side" id="js-static-menu-container">
+<div class="sidebar-content-wrap">
+<div id="enews-signup" class="enews box">
+<h2 class="sidebar-title">Get PETA Updates</h2>
+<link rel='stylesheet' href='https://dev.peta.org/wp-content/plugins/peta-middleware-api/css/front.css?ver=9.0' type='text/css' media='all' />
+<script>pma_ajax_url = 'https://dev.peta.org/wp-admin/admin-ajax.php';</script>
+<script src="https://dev.peta.org/wp-content/plugins/peta-middleware-api/js/vendors.js?ver3=2.0"></script>
+<script src="https://dev.peta.org/wp-content/plugins/peta-middleware-api/js/front.js?ver24=24.0"></script>
+<script src="https://dev.peta.org/wp-content/plugins/peta-middleware-api/js/pma-data.js?ver3=3.0"></script>
+<script type="">
+var bt_redirection = 'https://dev.peta.org';
+</script>
+<script>
+	jQuery(document).ready(function(){
+		PMA_SUBSCRIPTION_FORM.init( 'pma-subscription-form-widget17030779' );
+	});
+</script>
+<div class="pma-subscription-widget pma-subscription-wrap subscription-form pma-locale-en">
+<div class="required-fields-notice"></div>
+<div class="subscription-success-response17030779"></div>
+<form action="" method="POST" id='pma-subscription-form-widget17030779' onsubmit="return PMA_SUBSCRIPTION_FORM.submit( this )" data-ajax_submit='Y' data-response_target=".pma-subscription-widget-form17030779" data-error_response_target=".subscription-widget-error-response17030779" data-submit_button=".pma-subscription-widget-submit17030779" class="pma-subscription-shortcode">
+<div class="subscription-widget-error-response17030779"></div>
+<div class="pma-subscription-widget-form pma-subscription-widget-form17030779">
+<div class="row fields-row">
+<div class="small-12 large-12 columns">
+<div id="supporter-emailaddress">
+<input type='email' class='required email form-input trim-spaces validate-email ' id='supporter.emailAddress' name='supporter.emailAddress' value='' data-field-name='E-Mail Address' placeholder='E-Mail Address' data-val-msg-req='E-Mail Address is required.' data-val-msg-email='Enter a valid e-mail address.'> </div>
+<div id="supporter-not_tagged_16">
+<input type='text' class='form-input-bt' id='supporter.NOT_TAGGED_16' name='img_bt' value='' data-field-name='IMG Source'> </div>
+</div>
+</div>
+<div class="row opt-ins opt-ins-row">
+<div class="small-12 large-12 columns">
+<div class="pma-casl-check field-wrap email_optin" style="display:none"><div class="opt-in-text">Sign me up for the following e-mail:</div><label><input type="checkbox" class="form_check" name="supporter.questions.164" id="casl_check" value="Y">&nbsp;Membership Updates</label><label><input type="checkbox" class="form_check" name="supporter.questions.167" id="casl_check" value="Y">&nbsp;PETA E-News</label><div class="opt-out-text">Current subscribers: You will continue to receive e-mail unless you explicitly opt out by clicking <a href="https://support.peta.org/page/921/action/1" target="_blank">here</a>.</div></div> </div>
+</div>
+<div class="row text-center submit-row">
+<div class="small-12 large-12 columns">
+<input type="submit" id='pma-submit' class="pma-subscription-widget-submit medium button pma-button pma-button-submit pma-subscription-widget-submit17030779" value="Submit" data-processing-label="Processing...">
+</div>
+</div>
+<div class="row privacy-row">
+<div class="small-12 large-12 columns privacy-policy">
+<p>By submitting this form, you are agreeing to our collection, storage, use, and disclosure of your personal info in accordance with our <a href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/privacy/" target="_blank">privacy policy</a> as well as to receiving e-mails from us.</p>
+</div>
+</div>
+</div>
+<input type="hidden" name="ens_id" value="5806" id="ens_id" class="pma-ens_id" /><input type="hidden" name="post_id" value="10" id="post_id" class="pma-post_id" /><input type="hidden" name="pma_subscription_form_title" value="Sign Up for E-Mail" id="pma_subscription_form_title" class="pma-pma_subscription_form_title" /><input type="hidden" name="ga_label" value="Interior Sidebar E-News Form" id="ga_label" class="pma-ga_label" /><input type="hidden" name="w_post_id" value="10" id="w_post_id" class="pma-w_post_id" /><input type="hidden" name="country_detected" value="" id="country_detected" class="pma-country_detected" /><input type="hidden" name="locale" value="en" id="locale" class="pma-locale" /><input type="hidden" name="wpml_lang" value="en" id="wpml_lang" class="pma-wpml_lang" /><input type="hidden" name="layout" value="shortcode" id="layout" class="pma-layout" /><input type="hidden" name="en_txn6" value="https%3A%2F%2Fdev.peta.org%2Fblog%2F" id="en_txn6" class="pma-en_txn6" /> <div class="hidden" id="pma-utm-params"></div>
+<input type="hidden" name="pma_template" id="pma_template" value="subscription_form">
+</form>
+<div class="clear"></div>
+</div>
+</div> <div class="widget widget_text"> <div class="textwidget">
+<div class="social-follow-links">
+<h4>Follow Us</h4>
+<div class="icons">
+<a class="facebook" href="https://www.facebook.com/official.peta/" target="_blank" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 24 24" width="22" height="22"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_facebook"></use></svg></a>
+<a class="twitter" href="https://twitter.com/peta/" target="_blank" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 24 24" width="22" height="22"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_twitter"></use></svg></a>
+<a class="instagram" href="https://www.instagram.com/peta/?hl=en" target="_blank" rel="noopener noreferrer"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+<defs>
+<radialGradient id="radial-gradient" cx="-367.76" cy="-400.83" r="11" gradientTransform="matrix(0, -1.98, -1.84, 0, -732.2, -704.23)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fd5" /><stop offset="0.1" stop-color="#fd5" /><stop offset="0.5" stop-color="#ff543e" /><stop offset="1" stop-color="#c837ab" /></radialGradient>
+<radialGradient id="radial-gradient-2" cx="334.12" cy="-31.73" r="11" gradientTransform="matrix(0.17, 0.87, 3.58, -0.72, 52.88, -310.44)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3771c8" /><stop offset="0.13" stop-color="#3771c8" /><stop offset="1" stop-color="#60f" stop-opacity="0" /></radialGradient>
+</defs>
+<title>Instagram</title><g id="instagram"><path d="M12.05,1c-4.6,0-5.94,0-6.2,0a5.48,5.48,0,0,0-2.17.55,4.4,4.4,0,0,0-1.26.92A4.79,4.79,0,0,0,1.14,5.16,21.39,21.39,0,0,0,1,8.4V12c0,4.59,0,5.93,0,6.19a5.64,5.64,0,0,0,.52,2.12,4.67,4.67,0,0,0,3,2.46A8.19,8.19,0,0,0,6.19,23L12,23c2.78,0,5.56,0,5.82,0a7.5,7.5,0,0,0,1.66-.21,4.6,4.6,0,0,0,3-2.46A5.48,5.48,0,0,0,23,18.2C23,18,23,15,23,12s0-6,0-6.23a5.35,5.35,0,0,0-.53-2.1,4.16,4.16,0,0,0-.94-1.29,4.71,4.71,0,0,0-2.68-1.27A18.36,18.36,0,0,0,15.63,1Z" fill="url('#radial-gradient')" /><path d="M12.05,1c-4.6,0-5.94,0-6.2,0a5.48,5.48,0,0,0-2.17.55,4.4,4.4,0,0,0-1.26.92A4.79,4.79,0,0,0,1.14,5.16,21.39,21.39,0,0,0,1,8.4V12c0,4.59,0,5.93,0,6.19a5.64,5.64,0,0,0,.52,2.12,4.67,4.67,0,0,0,3,2.46A8.19,8.19,0,0,0,6.19,23L12,23c2.78,0,5.56,0,5.82,0a7.5,7.5,0,0,0,1.66-.21,4.6,4.6,0,0,0,3-2.46A5.48,5.48,0,0,0,23,18.2C23,18,23,15,23,12s0-6,0-6.23a5.35,5.35,0,0,0-.53-2.1,4.16,4.16,0,0,0-.94-1.29,4.71,4.71,0,0,0-2.68-1.27A18.36,18.36,0,0,0,15.63,1Z" fill="url('#radial-gradient-2')" /><path d="M12,3.86c-2.21,0-2.48,0-3.35.05a6,6,0,0,0-2,.38,3.94,3.94,0,0,0-1.44.94,4,4,0,0,0-.94,1.43,6.05,6.05,0,0,0-.37,2c0,.87-.05,1.15-.05,3.35s0,2.49.05,3.35a5.94,5.94,0,0,0,.37,2,4,4,0,0,0,.94,1.44,4.07,4.07,0,0,0,1.44.94,6,6,0,0,0,2,.38c.87,0,1.14.05,3.35.05s2.48,0,3.35-.05a6,6,0,0,0,2-.38,4.07,4.07,0,0,0,1.44-.94,3.83,3.83,0,0,0,.93-1.44,5.91,5.91,0,0,0,.38-2c0-.86.05-1.14.05-3.35s0-2.48-.05-3.34a6,6,0,0,0-.38-2,3.87,3.87,0,0,0-.93-1.43,3.94,3.94,0,0,0-1.44-.94,6,6,0,0,0-2-.38c-.87,0-1.15-.05-3.35-.05Zm-.73,1.47H12c2.17,0,2.43,0,3.28,0a4.68,4.68,0,0,1,1.51.28,2.55,2.55,0,0,1,.93.61,2.43,2.43,0,0,1,.61.93,4.68,4.68,0,0,1,.28,1.51c0,.86.05,1.11.05,3.28s0,2.43-.05,3.28a4.68,4.68,0,0,1-.28,1.51,2.73,2.73,0,0,1-1.54,1.54,4.68,4.68,0,0,1-1.51.28c-.85,0-1.11.05-3.28.05s-2.43,0-3.28-.05a4.68,4.68,0,0,1-1.51-.28,2.43,2.43,0,0,1-.93-.61,2.43,2.43,0,0,1-.61-.93,4.68,4.68,0,0,1-.28-1.51c0-.85,0-1.11,0-3.28s0-2.42,0-3.28a4.68,4.68,0,0,1,.28-1.51,2.43,2.43,0,0,1,.61-.93,2.43,2.43,0,0,1,.93-.61,4.68,4.68,0,0,1,1.51-.28c.75,0,1,0,2.55,0Zm5.07,1.34a1,1,0,1,0,0,1.95,1,1,0,0,0,0-1.95ZM12,7.81A4.17,4.17,0,1,0,16.21,12,4.17,4.17,0,0,0,12,7.81Zm0,1.47A2.71,2.71,0,1,1,9.33,12,2.7,2.7,0,0,1,12,9.28Z" fill="#fff" /></g></svg></a>
+<a class="pinterest" href="https://www.pinterest.com/officialpeta/" target="_blank" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 24 24" width="22" height="22"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_pinterest"></use></svg></a>
+<a class="youtube" href="https://www.youtube.com/user/officialpeta" target="_blank" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 24 24" width="28" height="28"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_youtube"></use></svg></a>
+<a class="phone" href="/about-peta/learn-about-peta/subscribe-to-mobile-alerts/"><svg class="icon" viewBox="0 0 24 24" width="22" height="22"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_phone"></use></svg></a>
+<a class="tiktok" href="https://www.tiktok.com/@officialpeta" target="_blank" rel="noopener noreferrer"><svg class="icon" viewBox="0 0 24 24" width="22" height="22"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_tiktok"></use></svg></a>
+</div></div>
+</div>
+</div> </div>
+<div class="row widget news peta-recent-posts"> <div class="widget-content">
+<ul id="peta-recent-posts-widget" class="menu sidebar-posts-list">
+<h3>Recent Posts</h3> <li class="entry">
+<div class="wrap">
+<div class="thumb">
+<a href="https://dev.peta.org/blog/instagram/">
+<img src="https://dev.peta.org/wp-content/plugins/peta-optimization/images/1x1.trans.gif" data-lazy-src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409" alt="Instagram" /><noscript><img  src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409"  alt="Instagram"  /></noscript> </a>
+</div>
+<div class="description post-list-has-thumbs"><p><a href="https://dev.peta.org/blog/instagram/">Instagram</a></p></div>
+</div>
+</li>
+<li class="entry">
+<div class="wrap">
+<div class="thumb">
+<a href="https://dev.peta.org/blog/test-en-shortcode-and-splash/">
+<img src="https://dev.peta.org/wp-content/plugins/peta-optimization/images/1x1.trans.gif" data-lazy-src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409" alt="Test EN Shortcode and Splash" /><noscript><img  src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409"  alt="Test EN Shortcode and Splash"  /></noscript> </a>
+</div>
+<div class="description post-list-has-thumbs"><p><a href="https://dev.peta.org/blog/test-en-shortcode-and-splash/">Test EN Shortcode and Splash</a></p></div>
+</div>
+</li>
+<li class="entry">
+<div class="wrap">
+<div class="thumb">
+<a href="https://dev.peta.org/blog/test-en-shortcode/">
+<img src="https://dev.peta.org/wp-content/plugins/peta-optimization/images/1x1.trans.gif" data-lazy-src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409" alt="Test EN Shortcode" /><noscript><img  src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409"  alt="Test EN Shortcode"  /></noscript> </a>
+</div>
+<div class="description post-list-has-thumbs"><p><a href="https://dev.peta.org/blog/test-en-shortcode/">Test EN Shortcode</a></p></div>
+</div>
+</li>
+<li class="entry">
+<div class="wrap">
+<div class="thumb">
+<a href="https://dev.peta.org/blog/test-counter/">
+<img src="https://dev.peta.org/wp-content/plugins/peta-optimization/images/1x1.trans.gif" data-lazy-src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409" alt="Test Counter" /><noscript><img  src="https://dev.peta.org/wp-content/uploads/2013/06/PETA-Facebook-Logo-198x120-1393359408.jpg?20190103124409"  alt="Test Counter"  /></noscript> </a>
+</div>
+<div class="description post-list-has-thumbs"><p><a href="https://dev.peta.org/blog/test-counter/">Test Counter</a></p></div>
+</div>
+</li>
+<li class="entry">
+<div class="wrap">
+<div class="thumb">
+<a href="https://dev.peta.org/about-peta/victories/uniqlo-bans-alpaca/">
+<img src="https://dev.peta.org/wp-content/plugins/peta-optimization/images/1x1.trans.gif" data-lazy-src="https://dev.peta.org/wp-content/uploads/2020/07/alpaca-wool-victory-396x240-1594920692.jpg?20200716053133" alt="Why PETA Is Praising the World&#8217;s Third-Largest Clothing Retailer" /><noscript><img  src="https://dev.peta.org/wp-content/uploads/2020/07/alpaca-wool-victory-396x240-1594920692.jpg?20200716053133"  alt="Why PETA Is Praising the World&#8217;s Third-Largest Clothing Retailer"  /></noscript> </a>
+</div>
+<div class="description post-list-has-thumbs"><p><a href="https://dev.peta.org/about-peta/victories/uniqlo-bans-alpaca/">Why PETA Is Praising the World&#8217;s Third-Largest Clothing Retailer</a></p></div>
+</div>
+</li>
+</ul>
+</div>
+</div> </div>
+</div>
+</div> 
+</div> 
+<div class="related-posts-wrapper">
+<div class="rectangle-bg"></div>
+<div class="row">
+<div id="related-posts-column" class="columns large-8">
+</div>
+</div>
+</div>
+<div class="sticky-share-bar" data-margin-bottom="0" data-sticky data-stick-to="bottom" data-top-anchor="800" data-btm-anchor="content-block:bottom" data-sticky-on="large">
+<div class="row">
+<div class="medium-8 columns">
+<div class="social-links">
+<a class="social facebook" data-social="facebook" data-share-location="Sticky Footer Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-redirect="https://dev.peta.org/facebook-redirect.html"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_facebook"></use></svg><span>Share</span></a><a class="social twitter" data-social="twitter" data-share-location="Sticky Footer Share" href="javascript:void(0);" title="Test EN Splash" data-url="https://dev.peta.org/blog/test-en-splash/" data-text="Test+EN+Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_twitter"></use></svg><span>Tweet</span></a><a class="donate" href="https://support.peta.org/page/1828/donate/1?en_txn7=Footer::0818-Donate-Now-Button-Social-Share-Bar&supporter.appealCode=IXXXWBXXXXG" title="Test EN Splash"><svg class="icon" viewBox="0 0 24 24" width="24" height="24"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://dev.peta.org/wp-content/themes/petaorg/assets/images/icons.svg#icons_donate"></use></svg><span>Donate</span></a></div> </div>
+</div>
+</div>
+<div class="enews-bottom">
+<div class="inner">
+<div class="row">
+<div class="medium-5 columns text">
+<h2 class="enews-header">Get PETA Updates</h2>
+<p>Stay up to date on the latest vegan trends and get breaking animal rights news delivered straight to your inbox!</p>
+</div>
+<div class="medium-7 columns">
+<script>
+	jQuery(document).ready(function(){
+		PMA_SUBSCRIPTION_FORM.init( 'pma-subscription-form-widget17030721' );
+	});
+</script>
+<div class="pma-subscription-widget pma-subscription-wrap subscription-form pma-locale-en">
+<div class="required-fields-notice"></div>
+<div class="subscription-success-response17030721"></div>
+<form action="" method="POST" id='pma-subscription-form-widget17030721' onsubmit="return PMA_SUBSCRIPTION_FORM.submit( this )" data-ajax_submit='Y' data-response_target=".pma-subscription-widget-form17030721" data-error_response_target=".subscription-widget-error-response17030721" data-submit_button=".pma-subscription-widget-submit17030721" class="pma-subscription-shortcode">
+<div class="subscription-widget-error-response17030721"></div>
+<div class="pma-subscription-widget-form pma-subscription-widget-form17030721">
+<div class="row fields-row">
+<div class="small-12 large-12 columns">
+<div id="supporter-emailaddress">
+<input type='email' class='required email form-input trim-spaces validate-email ' id='supporter.emailAddress' name='supporter.emailAddress' value='' data-field-name='E-Mail Address' placeholder='E-Mail Address' data-val-msg-req='E-Mail Address is required.' data-val-msg-email='Enter a valid e-mail address.'> </div>
+<div id="supporter-not_tagged_16">
+<input type='text' class='form-input-bt' id='supporter.NOT_TAGGED_16' name='img_bt' value='' data-field-name='IMG Source'> </div>
+</div>
+</div>
+<div class="row opt-ins opt-ins-row">
+<div class="small-12 large-12 columns">
+<div class="pma-casl-check field-wrap email_optin" style="display:none"><div class="opt-in-text">Sign me up for the following e-mail:</div><label><input type="checkbox" class="form_check" name="supporter.questions.164" id="casl_check" value="Y">&nbsp;Membership Updates</label><label><input type="checkbox" class="form_check" name="supporter.questions.167" id="casl_check" value="Y">&nbsp;PETA E-News</label><div class="opt-out-text">Current subscribers: You will continue to receive e-mail unless you explicitly opt out by clicking <a href="https://support.peta.org/page/921/action/1" target="_blank">here</a>.</div></div> </div>
+</div>
+<div class="row text-center submit-row">
+<div class="small-12 large-12 columns">
+<input type="submit" id='pma-submit' class="pma-subscription-widget-submit medium button pma-button pma-button-submit pma-subscription-widget-submit17030721" value="Submit" data-processing-label="Processing...">
+</div>
+</div>
+<div class="row privacy-row">
+<div class="small-12 large-12 columns privacy-policy">
+<p>By submitting this form, you are agreeing to our collection, storage, use, and disclosure of your personal info in accordance with our <a href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/privacy/" target="_blank">privacy policy</a> as well as to receiving e-mails from us.</p>
+</div>
+</div>
+</div>
+<input type="hidden" name="ens_id" value="5806" id="ens_id" class="pma-ens_id" /><input type="hidden" name="post_id" value="8" id="post_id" class="pma-post_id" /><input type="hidden" name="pma_subscription_form_title" value="Sign Up for E-Mail" id="pma_subscription_form_title" class="pma-pma_subscription_form_title" /><input type="hidden" name="ga_label" value="Interior Bottom E-News Form" id="ga_label" class="pma-ga_label" /><input type="hidden" name="w_post_id" value="8" id="w_post_id" class="pma-w_post_id" /><input type="hidden" name="country_detected" value="" id="country_detected" class="pma-country_detected" /><input type="hidden" name="locale" value="en" id="locale" class="pma-locale" /><input type="hidden" name="wpml_lang" value="en" id="wpml_lang" class="pma-wpml_lang" /><input type="hidden" name="layout" value="shortcode" id="layout" class="pma-layout" /><input type="hidden" name="en_txn6" value="https%3A%2F%2Fdev.peta.org%2F" id="en_txn6" class="pma-en_txn6" /> <div class="hidden" id="pma-utm-params"></div>
+<input type="hidden" name="pma_template" id="pma_template" value="subscription_form">
+</form>
+<div class="clear"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="about-peta row">
+<div class="medium-12 columns">
+<div class="row collapse">
+<div class="medium-3 columns">
+<img src="https://dev.peta.org/wp-content/themes/petaorg/assets/images/footer-ingrid-bg-600x320.jpg" />
+</div>
+<div class="medium-7 columns">
+<p>“Almost all of us grew up eating meat, wearing leather, and going to circuses and zoos. We never considered the impact of these actions on the animals involved. For whatever reason, you are now asking the question: Why should animals have rights?” <a href="https://www.peta.org/about-peta/why-peta/why-animal-rights/">READ MORE</a></p>
+<p class="name"><strong>&mdash; Ingrid E. Newkirk, PETA President and co-author of <a href="https://amzn.to/33u8GE2" target="_blank"><em>Animalkind</em></a></strong></p>
+</div>
+<div class="medium-2 columns">
+<a class="button" href="https://dev.peta.org/about-peta/why-peta/why-animal-rights/">Read More</a>
+</div>
+</div>
+</div>
+</div>
+</div> 
+
+<footer id="footer">
+<div class="cushion row">
+
+
+<div class="be-ix-link-block"></div>
+
+<div class="medium-4 columns">
+<div class="contact block">
+<dl>
+<dt>People for the Ethical Treatment of Animals</dt>
+<dd class="street">501 Front St., Norfolk, VA 23510</dd>
+<dd class="phone">757-622-PETA (7382)</dd>
+<dd class="fax">757-622-0457 (fax)</dd>
+<dd class="disclaimer">PETA is a nonprofit, tax-exempt 501(c)(3) corporation (tax ID number 52-1218336).</dd>
+</dl>
+<div class="clear"></div>
+<span class="header-photo-credit">Rabbit Image &copy;iStock.com | jt1971</span>
+</div>
+<div class="general-info block">
+<p class="menu-title">General Info:</p><div class="menu-general-info-container"><ul id="menu-general-info" class="menu vertical"><li id="menu-item-145389" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145389"><a accesskey="k" title="© 2020 PETA | Read Our Full Policy" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/">© 2020 PETA | Read Our Full Policy</a></li>
+<li id="menu-item-145322" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145322"><a accesskey="." title="Careers" href="https://dev.peta.org/about-peta/work-at-peta/">Careers</a></li>
+<li id="menu-item-145390" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145390"><a accesskey="f" title="Contact PETA" href="https://dev.peta.org/about-peta/contact-peta/">Contact PETA</a></li>
+<li id="menu-item-145329" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145329"><a accesskey="h" title="Contest Terms and Conditions" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/contest-terms-conditions/">Contest Terms and Conditions</a></li>
+<li id="menu-item-151439" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-151439"><a accesskey="g" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/disclaimer/">Disclaimer</a></li>
+<li id="menu-item-145337" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145337"><a accesskey="i" title="Texting Terms and Conditions" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/texting-terms-and-conditions/">Texting Terms and Conditions</a></li>
+<li id="menu-item-145335" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145335"><a accesskey="j" title="Privacy Policy" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/privacy/">Privacy Policy</a></li>
+<li id="menu-item-145334" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145334"><a accesskey="/" title="Terms of Use" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/peta-online-community-terms-of-use-agreement/">Terms of Use</a></li>
+<li id="menu-item-145391" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145391"><a accesskey="`" title="Report Website Abuse" href="https://dev.peta.org/about-peta/contact-peta/report-website-abuse/">Report Website Abuse</a></li>
+</ul></div> </div>
+</div>
+<div class="columns medium-4">
+<div class="site-tools block">
+<p class="menu-title">Site Tools:</p><div class="menu-site-tools-container"><ul id="menu-site-tools" class="menu vertical"><li id="menu-item-145392" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145392"><a accesskey="0" title="Accessibility" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/accessibility/">Accessibility</a></li>
+<li id="menu-item-145393" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145393"><a accesskey="1" title="Site Map" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/site-map/">Site Map</a></li>
+<li id="menu-item-145394" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145394"><a accesskey="l" title="Subscribe to E-News" href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/subscribe-to-enews/">Subscribe to E-News</a></li>
+<li id="menu-item-145395" class="menu-item menu-item-type-post_type menu-item-object-about menu-item-145395"><a accesskey="z" title="Get Mobile Alerts" href="https://dev.peta.org/about-peta/learn-about-peta/subscribe-to-mobile-alerts/">Become a Mobile First Responder</a></li>
+</ul></div> </div>
+<div class="international-sites block">
+<p class="menu-title">International Sites:</p><div class="menu-international-sites-container"><ul id="menu-international-sites" class="menu vertical"><li id="menu-item-441" class="flag-icon peta-uk menu-item menu-item-type-custom menu-item-object-custom menu-item-441"><a accesskey="m" title="PETA U.K." href="https://dev.peta.org.uk">PETA U.K.</a></li>
+<li id="menu-item-442" class="flag-icon peta-france menu-item menu-item-type-custom menu-item-object-custom menu-item-442"><a accesskey="n" title="PETA France" href="http://www.petafrance.com">PETA France</a></li>
+<li id="menu-item-443" class="flag-icon peta-germany menu-item menu-item-type-custom menu-item-object-custom menu-item-443"><a accesskey="o" title="PETA Germany" href="http://www.peta.de/">PETA Germany</a></li>
+<li id="menu-item-444" class="flag-icon peta-netherlands menu-item menu-item-type-custom menu-item-object-custom menu-item-444"><a accesskey="p" title="PETA Netherlands" href="http://www.peta.nl">PETA Netherlands</a></li>
+<li id="menu-item-445" class="flag-icon peta-india menu-item menu-item-type-custom menu-item-object-custom menu-item-445"><a accesskey="q" title="PETA India" href="http://www.petaindia.com/">PETA India</a></li>
+<li id="menu-item-446" class="flag-icon peta-australia menu-item menu-item-type-custom menu-item-object-custom menu-item-446"><a accesskey="r" title="PETA Australia" href="https://dev.peta.org.au">PETA Australia</a></li>
+<li id="menu-item-447" class="peta-asia-pacific menu-item menu-item-type-custom menu-item-object-custom menu-item-447"><a accesskey="[" title="PETA Asia" href="http://www.petaasia.com">PETA Asia</a></li>
+<li id="menu-item-448" class="peta-china menu-item menu-item-type-custom menu-item-object-custom menu-item-448"><a accesskey="]" title="亚洲善待动物组织" href="http://www.petaasia.cn">亚洲善待动物组织</a></li>
+<li id="menu-item-449" class="peta-latino menu-item menu-item-type-custom menu-item-object-custom menu-item-449"><a accesskey="s" href="http://www.petalatino.com">PETA Latino</a></li>
+</ul></div> </div>
+</div>
+<div class="columns medium-4">
+<div class="navigation block">
+<p class="menu-title">Navigation:</p>
+<div class="menu-top-navigation-container"><ul id="menu-top-navigation-4" class="menu vertical"><li class="nav-features menu-item menu-item-type-post_type_archive menu-item-object-feature menu-item-745"><a accesskey="3" title="Features" href="https://dev.peta.org/features/">Features</a></li>
+<li class="nav-video menu-item menu-item-type-post_type_archive menu-item-object-video menu-item-has-children menu-item-916786"><a accesskey="4" href="https://dev.peta.org/videos/">Videos</a></li>
+<li class="nav-action menu-item menu-item-type-post_type_archive menu-item-object-peta-action menu-item-has-children menu-item-145474"><a accesskey="5" title="Action" href="https://dev.peta.org/action/">Action</a></li>
+<li class="nav-blog menu-item menu-item-type-post_type menu-item-object-page current_page_parent menu-item-has-children menu-item-148174"><a accesskey="6" title="News" href="https://dev.peta.org/blog/">News</a></li>
+<li class="nav-issues menu-item menu-item-type-post_type_archive menu-item-object-issue menu-item-has-children menu-item-748"><a accesskey="7" title="Issues" href="https://dev.peta.org/issues/">Issues</a></li>
+<li class="nav-living menu-item menu-item-type-post_type_archive menu-item-object-living menu-item-has-children menu-item-145472"><a accesskey="8" title="Living" href="https://dev.peta.org/living/">Living</a></li>
+<li class="menu-item menu-item-type-post_type_archive menu-item-object-student menu-item-has-children menu-item-920111"><a accesskey="t" href="https://dev.peta.org/students/">Students</a></li>
+<li class="nav-shop menu-item menu-item-type-post_type menu-item-object-page menu-item-596"><a accesskey="b" title="Shop" href="https://dev.peta.org/shop/">Shop</a></li>
+<li class="nav-interactive menu-item menu-item-type-post_type menu-item-object-page menu-item-602710"><a accesskey="c" title="Investigations" href="https://dev.peta.org/investigations/">Investigations</a></li>
+<li class="nav-media menu-item menu-item-type-post_type_archive menu-item-object-media_center menu-item-has-children menu-item-145464"><a accesskey="d" title="Media" href="https://dev.peta.org/media/">Media</a></li>
+<li class="nav-about menu-item menu-item-type-post_type_archive menu-item-object-about menu-item-has-children menu-item-145470"><a accesskey="e" title="About" href="https://dev.peta.org/about-peta/">About</a></li>
+<li class="nav-donate menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-149040"><a accesskey="a" title="Donate Now" href="https://support.peta.org/page/1828/donate/1?en_txn7=Navigation::top%20donate%20now%20button&#038;supporter.appealCode=IXXXWBXXXXG">Donate Now</a></li>
+</ul></div> </div>
+</div>
+</div>
+</footer>
+
+</div>
+<div id="pspModal" class="reveal reveal-modal show-for-medium" data-reveal data-v-offset="100" data-btm-offset-pct="10"></div> <div class="sticky-banner" style="display:none">
+<div class="wrapper">
+<h5><span style="color: #0080c0;"><strong>Text COCONUT to 73822 to urge producers of coconut products to stop obtaining coconuts from forced monkey labor. Baby monkeys are abducted from their families, chained, and abused.</strong></span></h5>
+<h5><span style="color: #ffffff;">US only. Data Rates May Apply. <a href="https://dev.peta.org/about-peta/learn-about-peta/website-policies/texting-terms-and-conditions/" target="_blank" rel="noopener">T&amp;Cs</a>.</span></h5>
+</div>
+<a class="close-button">✕</a>
+</div>
+<script id="email-validation-script" src="https://services.peta.org/validate.js?v=1.10"></script>
+<link href="https://services.peta.org/validate.css?v=1.10" media="all" rel="stylesheet" />
+<script>
+		jQuery(document).ready(function(){
+			jQuery('.validate-email').validate_email({lang:'en'});
+			jQuery( '.gf-validate-email input' ).validate_email({lang:'en'});
+			jQuery( '.gf-validate-email' ).each(function( i, elem ){
+				var width = 'calc('+jQuery(elem).find('input').css('width')+' + 1px)';
+				jQuery(elem).find('.email-suggestion-list-items').css('width', width);
+			})
+		});
+	</script>
+<style>
+		input.has-email-suggestion{margin-bottom: 0px;}
+		input.invalid-email{margin-bottom: 0px;}
+		.invalid-email-text, .suggestion-text {padding: 0px;font-size: 0.8rem;}
+		.suggestion {padding-top: 0px;}
+		.email-suggestion-list-items {line-height: 1.2;}
+		.invalid-email-text { display: inline;padding: 0;font-size: 0.8rem;}
+		#enews-signup .email-suggestion-list-items {position: relative;width: 166.5%;margin-top: 1px;}
+	</style>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-optimization/js/jquery.sonar.min.js?ver=1.1' id='jquery-sonar-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-optimization/js/po.js?v=2.0&#038;ver=1.1' id='po-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-optimization/js/po-gif.js?ver=1.1' id='po-gif-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-optimization/js/loading-attribute-polyfill.min.js?ver=1.1' id='po-ployfile-lazyload-js'></script>
+<script type='text/javascript' id='ajax-load-more-js-extra'>
+/* <![CDATA[ */
+var ajax_obj = {"url":"https:\/\/dev.peta.org\/wp-admin\/admin-ajax.php","posts_per_page":"15"};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-org/src/content/js/load-more.js?ver=5.5.3' id='ajax-load-more-js'></script>
+<script type='text/javascript' src='https://resources.peta.org/googleAnalytics/global/ga_social_tracking.js?ver=1.0' id='ga-social-tracking-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/plugin-splash-pages/includes/frontend/js/jquery.cookie.js?ver=1.0' id='jquery-cookie-js'></script>
+<script type='text/javascript' id='peta-splash-pages-js-extra'>
+/* <![CDATA[ */
+var splash_page_variables = {"endpoint_url":"https:\/\/peta.test\/peta-iframe\/splash-data.json?","expiration":"0","client_ip":"","splash_id":"965425","preview_mode":""};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/plugin-splash-pages/includes/frontend/js/peta-splash-pages.js?ver=1.4' id='peta-splash-pages-js'></script>
+<script type='module' src='https://dev.peta.org/wp-content/plugins/wp-performance-score-booster//assets/js/page-preloader.js?ver=5.1.0' id='wppsb-page-preload-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/page-links-to/dist/new-tab.js?ver=3.3.4' id='page-links-to-js'></script>
+<script type='text/javascript' id='sticky-banner-js-js-extra'>
+/* <![CDATA[ */
+var sticky_banner_php_js_vars = {"cookie_name":"c_sticky_banner_127"};
+/* ]]> */
+</script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/peta-org-sticky-banner/js/sticky-banner.js?ver=5.5.3' id='sticky-banner-js-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/plugins/fooboxV2/js/foobox.min.js?ver=2.4.0.0' id='foobox-min-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-content/themes/petaorg/assets/scripts/scripts.js?ver=1605292151' id='site-js-js'></script>
+<script type='text/javascript' src='https://dev.peta.org/wp-includes/js/wp-embed.min.js?ver=5.5.3' id='wp-embed-js'></script>
+<script type="text/javascript">/* Run FooBox (v2.4.0.0) */
+(function( FOOBOX, $, undefined ) {
+  FOOBOX.o = {wordpress: { enabled: true }, pan: { enabled: true, showOverview: true, position: "fbx-top-right" }, deeplinking : { enabled: true, prefix: "foobox" }, fullscreen : { enabled: true }, captions: { onlyShowOnHover:true, overrideTitle:true, titleSource:'image', overrideDesc:true, descSource:'image_alt' }, countMessage:'image %index of %total', excludes:'.fbx-link,.nofoobox,.nolightbox,a[href*="pinterest.com/pin/create/button/"]', affiliate : { enabled: false }, error: "Oops, the image couldn\'t load", slideshow: { enabled:true}, social: {"enabled":false}, preload:true};
+  FOOBOX.init = function() {
+    $(".fbx-link").removeClass("fbx-link");
+  $("a.thickbox").removeClass("thickbox").unbind("click");
+  $("#TB_overlay, #TB_load, #TB_window").remove();
+    $(".fbx-link").unbind(".prettyphoto").unbind(".fb");
+    $(".foobox-gallery").foobox(FOOBOX.o);
+    $(".gallery").foobox(FOOBOX.o);
+    $(".foobox, [target=\"foobox\"]").foobox(FOOBOX.o);
+    $(".wp-caption").foobox(FOOBOX.o);
+    $("a:has(img[class*=wp-image-])").foobox(FOOBOX.o);
+
+  };
+}( window.FOOBOX = window.FOOBOX || {}, FooBox.$ ));
+
+jQuery(function() {
+
+  jQuery("body").append("<span style=\"font-family:'foobox'; color:transparent; position:absolute; top:-1000em;\">f</span>");
+  FOOBOX.init();
+  jQuery(document).trigger("foobox-after-init");
+  jQuery('body').on('post-load', function(){ FOOBOX.init(); });
+
+});
+</script><style type="text/css">
+
+</style> <script type="text/javascript">
+				jQuery.fn.prettyPhoto   = function () { return this; };
+				jQuery.fn.fancybox      = function () { return this; };
+				jQuery.fn.fancyZoom     = function () { return this; };
+				jQuery.fn.colorbox      = function () { return this; };
+				jQuery.fn.magnificPopup = function () { return this; };
+			</script>
+<script type="text/javascript">
+/**
+* Taken from peta2 for customizing social share overlay
+* @don
+ */
+function fb_share(obj) {
+	var override_link = jQuery(obj).data('url');
+	var override_title = jQuery(obj).data('title');
+	var override_description = jQuery(obj).data('description');
+	var og_image = jQuery('meta[property="og:image"]').attr('content');
+	console.log(og_image);
+	//console.log(jQuery(obj).data('title'))
+	//console.log(jQuery(obj).data('url'))
+	//console.log( jQuery(obj).data('description'))
+	FB.ui({
+		method: 'share_open_graph',
+		action_type: 'og.likes',
+		action_properties: JSON.stringify({
+			object: {
+				'og:url': override_link,
+				'og:title': override_title,
+				'og:image': og_image,
+				'og:description': override_description,
+			}
+		})
+	},
+	function (response) {
+	// Action after response
+	});
+}
+</script>
+<script>
+jQuery(document).ready(function() {
+	!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');
+});
+</script>
+</body>
+</html>
