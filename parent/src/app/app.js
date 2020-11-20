@@ -13,7 +13,7 @@ export const run = () => {
       console.log(el);
       let petaIframe = new Shortcode(el, {
         iframe: function() {
-          return `<iframe loading='lazy' id='peta-iframe' width='100%' scrolling='no' class='peta-iframe' src='${this.options.url}' frameborder='0' allowfullscreen></iframe>`;
+          return `<iframe loading='lazy' id='peta-iframe' width='100%' scrolling='no' class='peta-iframe' src='${this.options.url}' frameborder='0' allowfullscreen referrerpolicy='no-referrer-when-downgrade'></iframe>`;
         },
       });
     });
@@ -29,17 +29,24 @@ export const run = () => {
         const elDistanceToTop =
           window.pageYOffset + iframe.getBoundingClientRect().top;
         let scrollTo = elDistanceToTop + e.data.scroll - 80; // 80 = Fixed Header Offset
-        window.scrollTo({
-          top: scrollTo,
-          left: 0,
-          behavior: "smooth",
-        });
-        console.log(
-          "Scrolling to",
-          scrollTo,
-          iframe.getBoundingClientRect().top,
-          e.data.scroll
-        );
+
+        // Check if has splash
+        let overlay = document.querySelector(".reveal-overlay");
+        if (overlay) {
+          overlay.scrollTo({
+            top: scrollTo,
+            left: 0,
+            behavior: "smooth",
+          });
+          console.log("Scrolling Overlay To", scrollTo);
+        } else {
+          window.scrollTo({
+            top: scrollTo,
+            left: 0,
+            behavior: "smooth",
+          });
+          console.log("Scrolling Window To", scrollTo);
+        }
       }
     }
   };
