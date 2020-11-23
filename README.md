@@ -6,7 +6,7 @@ This project allows Seamless iFrame Embed for PETA.
 
 1. Add the `peta-iframe-child.js` (generated from the `child` folder) on your EN Donation and "Thank You" pages.
 2. Add the `peta-iframe-parent.js` (generated from the `parent` folder) on the website page.
-3. Add this shortcode to the page: `[iframe url="{MY_DONATION_PAGE}"]`. Replace the **{MY_DONATION_PAGE}** part with the URL of your Donation Page.
+3. Add this shortcode to the page: `<span class="iframe-shortcode">[iframe url="{MY_DONATION_PAGE}"]</span>`. Replace the **{MY_DONATION_PAGE}** part with the URL of your Donation Page.
 
 ## Development
 
