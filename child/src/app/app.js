@@ -41,14 +41,22 @@ export const run = () => {
       return enURLPattern.test(referrer) ? 1 : 0;
     };
     window.onload = () => {
-      sendIframeHeight();
-      // Scroll to top of iFrame
-      window.parent.postMessage(
-        {
-          scroll: shouldScroll(),
-        },
-        "*"
-      );
+      // repeat with the interval of 200ms
+      let timerId = setInterval(() => sendIframeHeight(), 200);
+      // after 3 seconds, stop
+      setTimeout(() => {
+        clearInterval(timerId);
+      }, 3000);
+      // Scroll to top of iFrame after half second
+      setTimeout(() => {
+        window.parent.postMessage(
+          {
+            scroll: shouldScroll(),
+          },
+          "*"
+        );
+      }, 500);
+
       document.addEventListener("click", (e) => {
         var targetElement = e.target || e.srcElement;
         var parentElement = targetElement.parentNode;

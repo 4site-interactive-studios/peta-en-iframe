@@ -12,7 +12,7 @@
   "time_to_delay": "10",
   "psp_cookie_expiration_days": "0",
   "condition_for_cookie_expiration": null,
-  "response": "<a class='close-reveal-modal' data-close>&#x2715;</a><div class=\"cushion\"><div class=\"splash-content\"><input class=\"fooboxshare_post_id\" type=\"hidden\" value=\"\"/><p>[iframe url=https://support.peta.org/page/22133/donate/1]</p>\n</div><div class=\"clearfix\"></div></div>\n\t\t\t\t\t\t\t\t\t</div><style>/**\n * Splash-Pages: splash-narwhal-blue\n */\n.reveal-modal .cushion,\n.reveal-modal.psp-bg-form .form-column {\n\tbackground: #254D68;\n}\n\n.reveal-modal input[type=submit],\n.reveal-modal input#pma-submit,\n.reveal-modal .splash-middleware-form input[type=submit] {\n\tbackground: #418FDE;\n}\n\n.reveal-modal .countdown_label {\n\tcolor: #418FDE;\n}</style>",
+  "response": "<a class='close-reveal-modal' data-close>&#x2715;</a><div class=\"cushion\"><div class=\"splash-content\"><input class=\"fooboxshare_post_id\" type=\"hidden\" value=\"\"/><p class=\"iframe-shortcode\">[iframe url=https://support.peta.org/page/22133/donate/1]</p>\n</div><div class=\"clearfix\"></div></div>\n\t\t\t\t\t\t\t\t\t</div><style>/**\n * Splash-Pages: splash-narwhal-blue\n */\n.reveal-modal .cushion,\n.reveal-modal.psp-bg-form .form-column {\n\tbackground: #254D68;\n}\n\n.reveal-modal input[type=submit],\n.reveal-modal input#pma-submit,\n.reveal-modal .splash-middleware-form input[type=submit] {\n\tbackground: #418FDE;\n}\n\n.reveal-modal .countdown_label {\n\tcolor: #418FDE;\n}</style>",
   "splash_permalink": "https://dev.peta.org/splash_pages/test-en-shortcode/",
   "splash_id": "965425",
   "splash_size": "medium"
