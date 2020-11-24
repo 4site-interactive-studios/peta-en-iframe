@@ -32,6 +32,7 @@ export const run = () => {
         // Check if has splash
         let overlay = document.querySelector(".reveal-overlay");
         if (overlay) {
+          scrollTo = e.data.scroll - 80;
           overlay.scrollTo({
             top: scrollTo,
             left: 0,
