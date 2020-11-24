@@ -55,7 +55,7 @@ export const run = () => {
           },
           "*"
         );
-      }, 500);
+      }, 1000);
 
       document.addEventListener("click", (e) => {
         var targetElement = e.target || e.srcElement;
