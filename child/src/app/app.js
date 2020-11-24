@@ -60,18 +60,18 @@ export const run = () => {
       document.addEventListener("click", (e) => {
         var targetElement = e.target || e.srcElement;
         var parentElement = targetElement.parentNode;
-        if (parentElement.classList.contains("en__submit")) {
-          setTimeout(() => {
-            window.parent.postMessage(
-              {
-                scroll: shouldScroll(),
-              },
-              "*"
-            );
-          }, 200);
-        } else {
-          sendIframeHeight();
-        }
+        // if (parentElement.classList.contains("en__submit")) {
+        //   setTimeout(() => {
+        //     window.parent.postMessage(
+        //       {
+        //         scroll: shouldScroll(),
+        //       },
+        //       "*"
+        //     );
+        //   }, 200);
+        // } else {
+        sendIframeHeight();
+        // }
       });
     };
     window.onresize = () => sendIframeHeight();
